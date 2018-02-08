@@ -149,6 +149,8 @@ class FixedWidth(object):
 
             current_pos = current_pos + config[field_name]['length']
 
+        self.line_length = current_pos - 1
+
     def update(self, **kwargs):
 
         """
@@ -306,6 +308,12 @@ class FixedWidth(object):
                 self.data[field_name] = self.config[field_name]['default']
             else:
                 self.data[field_name] = conversion[self.config[field_name]['type']](row)
+
+        # choke on too long lines
+        if (len(fw_string) > self.line_length) and (
+                str(fw_string[self.line_length:]).strip()):
+            raise ValueError("line too long (expected %d, received %d)"
+                        % (self._line_length, len(fw_string)))
 
         self.validate()
 
