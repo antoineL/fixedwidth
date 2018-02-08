@@ -307,6 +307,8 @@ class FixedWidth(object):
             else:
                 self.data[field_name] = conversion[self.config[field_name]['type']](row)
 
+        self.validate()
+
         return self.data
 
     line = property(_build_line, _string_to_dict)
