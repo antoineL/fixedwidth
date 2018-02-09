@@ -22,6 +22,7 @@ class FixedWidth(object):
         start_pos   an integer; required
         length      an integer
         end_pos     an integer
+        blank       a boolean; indicates a field can be empty and missing
         format      a string, to format dates, required for date fields
     The following keys are only used when emitting fixed-width strings:
         alignment   a string; required
@@ -137,6 +138,21 @@ class FixedWidth(object):
                 if value['default'] is not None and not isinstance(value['default'], types[value['type']]):
                     raise ValueError("Default value for %s is not a valid %s" \
                         % (key, value['type']))
+
+            #fill in blank
+            if 'blank' not in value:
+                value['blank'] = False
+            #if field can be blank, make sure it can be handled
+            if value['blank']:
+
+                #can't be required AND blank
+                if value['required']:
+                    raise ValueError("Field %s is required, can not be blank" % (key,))
+
+                #can't be blank AND have a default value
+                if 'default' in value:
+                    raise ValueError("Field %s can be blank; \
+                        can not have a default value" % (key,))
 
         #ensure start_pos and end_pos or length is correct in config
         current_pos = 1
@@ -263,10 +279,13 @@ class FixedWidth(object):
         #for start_pos, field_name in self.ordered_fields:
         for field_name in [x[1] for x in self.ordered_fields]:
 
+            padding = self.config[field_name]['padding']
             if field_name in self.data:
                 datum = self._format_field(field_name)
             else:
                 datum = ''
+                if self.config[field_name]['blank']:
+                    padding = " "
 
             justify = None
             if self.config[field_name]['alignment'] == 'left':
@@ -274,8 +293,7 @@ class FixedWidth(object):
             else:
                 justify = datum.rjust
 
-            datum = justify(self.config[field_name]['length'], \
-                self.config[field_name]['padding'])
+            datum = justify(self.config[field_name]['length'], padding)
 
             line += datum
 
@@ -303,9 +321,20 @@ class FixedWidth(object):
             }
 
             row = fw_string[start_pos - 1:self.config[field_name]['end_pos']]
-            if row.strip() == '' and 'default' in self.config[field_name]:
-                # Use default value if row is empty
-                self.data[field_name] = self.config[field_name]['default']
+            if row.strip() == '':
+                # if row is empty...
+                if 'value' in self.config[field_name]:
+                    # Use hard-coded value if there is one
+                    self.data[field_name] = self.config[field_name]['value']
+                elif 'default' in self.config[field_name]:
+                    # Use default value if there is one
+                    self.data[field_name] = self.config[field_name]['default']
+                elif self.config[field_name]['blank']:
+                    # Missing field is allowed
+                    pass
+                else:
+                    # Store empty field
+                    self.data[field_name] = ""
             else:
                 self.data[field_name] = conversion[self.config[field_name]['type']](row)
 

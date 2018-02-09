@@ -40,7 +40,8 @@ SAMPLE_CONFIG = {
         "start_pos": 31,
         "length": 15,
         "alignment": "left",
-        "padding": " "
+        "padding": " ",
+        "blank": True
     },
 
     "age": {
@@ -199,6 +200,7 @@ class TestFixedWidth(unittest.TestCase):
         values = fw_obj.data
         self.assertEqual(values["first_name"], "Michael")
         self.assertEqual(values["last_name"], "Smith")
+        self.assertEqual("nickname" in values, False)
         self.assertEqual(values["age"], 32)
         self.assertEqual(values["meal"], "vegetarian")
         self.assertEqual(values["latitude"], Decimal('40.7128'))
